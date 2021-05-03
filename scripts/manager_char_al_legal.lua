@@ -108,14 +108,10 @@ function outputStory(tCharacter)
 			sAddDesc = sAddDesc .."<li><b>Source:</b> " .. nodeFeat[3] .." </li></list><p />";
 		end
 		
-		if tCharacter.nPointBuy > 27 or tCharacter.nPointBuy == -1 then
-			sValid = "Invalid";
-		else
-			sValid = "Valid";
-		end	
 		-- Output Ability Scorez
-		sAddDesc = sAddDesc .. "<h>Ability Scores ("   .. sValid .. ") </h>";
-		sAddDesc = sAddDesc .. "<table><tr><td colspan=\"6\"><b>Current Scores</b></td></tr><tr>"
+		sAddDesc = sAddDesc .. "<h>Ability Scores ("   .. tCharacter.sScoresValid .. ") </h>";
+	--	sAddDesc = sAddDesc .. "<h>Ability Scores ("   .. "Valid" .. ") </h>";
+	sAddDesc = sAddDesc .. "<table><tr><td colspan=\"6\"><b>Current Scores</b></td></tr><tr>"
 		for _,nodeScore in ipairs( tCharacter.tOriginalScores) do
 			sAddDesc = sAddDesc .. "<td><b>" .. nodeScore.sLabel .. "</b></td>"
 		end
@@ -240,9 +236,9 @@ function checkAbilityScores(tCharacter)
 	-- Sort the scores highest to lowest
     tCharacter.tAdjustedScores = bubbleSortAbilityScores(tCharacter.tAdjustedScores);
 	-- Subtrack off racial bonus from highest scores
-	local aRace = tCharacter.tRace.aScores;
-	for i=1,#aRace do
-		tCharacter.tAdjustedScores[i].nScore = tCharacter.tAdjustedScores[i].nScore - aRace[i];
+	local tRace = tCharacter.tRace.aScores;
+	for i=1,#tRace do
+		tCharacter.tAdjustedScores[i].nScore = tCharacter.tAdjustedScores[i].nScore - tRace[i];
 	end
 
 	-- Re-sort
@@ -280,9 +276,9 @@ function checkAbilityScores(tCharacter)
 	
 	tCharacter.nPointBuy = calculatePointBuy(tCharacter.tAdjustedScores);
 	if tCharacter.nPointBuy > 27 then
-		sScoresValid = "Invalid: Point buy > 27";
+		tCharacter.sScoresValid = "Invalid: Point buy greater than 27";
 	elseif tCharacter.nPointBuy == -1 then
-		sScoresValid = "Invalid: One more scores > 27 or < 8 ";
+		tCharacter.sScoresValid = "Invalid: One more scores greater than 27 or less than 8 ";
 	end;
 
 	tCharacter.tAdjustedScores = sortScoresStandard(tCharacter.tAdjustedScores);
@@ -358,12 +354,12 @@ function getNumberASI(aClass)
 	return nASI;
 end
 
-function getASIPoints(aCharFeats, aRace, aClass)
+function getASIPoints(aCharFeats, tRace, aClass)
 	local nASIPoints = 0;
 	local nFeats = #aCharFeats;
 
 	-- Ignore the first level feat for human variant so all calcualtions work
-	if aRace.sName == "human-variant" and nFeats >= 1 then
+	if tRace.sName == "human-variant" and nFeats >= 1 then
 		nFeats = nFeats - 1;
 	end 
 	
@@ -378,57 +374,57 @@ function getASIPoints(aCharFeats, aRace, aClass)
 	return nASIPoints
 end
 function getRace(nodeActor)
-	local aRace = {sRace = "", aScores = {}, sSource = "", sValid = "Valid"}
-	aRace.sRace = StringManager.trim(DB.getValue(nodeActor, "race", "")):lower();
+	local tRace = {sRace = "", aScores = {}, sSource = "", sValid = "Valid"}
+	tRace.sRace = StringManager.trim(DB.getValue(nodeActor, "race", "")):lower();
 
-	if aRace.sRace == "mountain dwarf"  then
-		aRace.aScores = {2,2};
-		aRace.sSource = "PHB";
-	elseif aRace.sRace == "dragonborn" or  aRace.sRace == "hill dwarf" or aRace.sRace == "half-orc" or aRace.sRace == "tiefling" 
-	or aRace.sRace == "forest gnome" or aRace.sRace == "rock gnome" or aRace.sRace == "high elf" or aRace.sRace == "wood elf" 
-	or aRace.sRace == "dark elf (drow)" or aRace.sRace == "halfling (lightfoot)" or aRace.sRace == "halfling (stout)" then
-		aRace.aScores = {2,1};
-		aRace.sSource = "PHB";
-	elseif aRace.sRace == "half-elf" then
-		aRace.aScores = {2,1,1};
-		aRace.sSource = "PHB";
-	elseif aRace.sRace == "human" then
-		aRace.aScores = {1,1,1,1,1,1};
-		aRace.sSource = "PHB";
-	elseif aRace.sRace == "human-variant" then
-		aRace.aScores = {1,1};
-		aRace.sSource = "PHB";
-	elseif aRace.sRace:match("assimar") or aRace.sRace == "bugbear" or aRace.sRace == "firbolg" or aRace.sRace == "goblin" 
-	or aRace.sRace == "goliath" or aRace.sRace == "kenku" or aRace.sRace == "lizardfolk" or aRace.sRace == "orc" or aRace.sRace == "tabaxi" 
-	or aRace.sRace == "yuan-ti pureblood" then
-		aRace.aScores = {2,1};
-		aRace.sSource = "VGM";
-	elseif aRace.sRace == "aasimar" or aRace.sRace == "kobold" then
-		aRace.aScores = {2};
-		aRace.sSource = "VGM";
-	elseif aRace.sRace == "triton" then
-		aRace.aScores = {1,1,1};
-		aRace.sSource = "VGM";
-	elseif aRace.sRace == "duergar" or aRace.sRace == "deep gnome" or aRace.sRace == "eladrin" or aRace.sRace == "sea elf" 
-	or aRace.sRace == "shadar-kai" or aRace.sRace:match("tiefling") then
-		aRace.aScores = {2,1};
-		aRace.sSource = "MTF";
-	elseif aRace.sRace == "gith" then
-		aRace.aScores = {1};
-		aRace.sSource = "MTF";
-	elseif aRace.sRace == "shield dwarf"  then
-		aRace.aScores = {2,2};
-		aRace.sSource = "SCA";
-	elseif aRace.sRace == "gray dwarf (duergar)" or aRace.sRace == "gold dwarf" or aRace.sRace == "moon elf" or aRace.sRace == "sun elf" 
-	or aRace.sRace == "wood elf" or aRace.sRace:match("half-elf-variant") or aRace.sRace:match("tiefling-variant") 
-	or aRace.sRace == "deep gnome (svirfneblin)" or aRace.sRace == "halfling (ghostwise)" or aRace.sRace == "halfling (strongheart)" then
-		aRace.aScores = {2,1};
-		aRace.sSource = "SCA";
+	if tRace.sRace == "mountain dwarf"  then
+		tRace.aScores = {2,2};
+		tRace.sSource = "PHB";
+	elseif tRace.sRace == "dragonborn" or  tRace.sRace == "hill dwarf" or tRace.sRace == "half-orc" or tRace.sRace == "tiefling" 
+	or tRace.sRace == "forest gnome" or tRace.sRace == "rock gnome" or tRace.sRace == "high elf" or tRace.sRace == "wood elf" 
+	or tRace.sRace == "dark elf (drow)" or tRace.sRace == "halfling (lightfoot)" or tRace.sRace == "stout halfling" then
+		tRace.aScores = {2,1};
+		tRace.sSource = "PHB";
+	elseif tRace.sRace == "half-elf" then
+		tRace.aScores = {2,1,1};
+		tRace.sSource = "PHB";
+	elseif tRace.sRace == "human" then
+		tRace.aScores = {1,1,1,1,1,1};
+		tRace.sSource = "PHB";
+	elseif tRace.sRace == "human-variant" then
+		tRace.aScores = {1,1};
+		tRace.sSource = "PHB";
+	elseif tRace.sRace:match("assimar") or tRace.sRace == "bugbear" or tRace.sRace == "firbolg" or tRace.sRace == "goblin" 
+	or tRace.sRace == "goliath" or tRace.sRace == "kenku" or tRace.sRace == "lizardfolk" or tRace.sRace == "orc" or tRace.sRace == "tabaxi" 
+	or tRace.sRace == "yuan-ti pureblood" then
+		tRace.aScores = {2,1};
+		tRace.sSource = "VGM";
+	elseif tRace.sRace == "aasimar" or tRace.sRace == "kobold" then
+		tRace.aScores = {2};
+		tRace.sSource = "VGM";
+	elseif tRace.sRace == "triton" then
+		tRace.aScores = {1,1,1};
+		tRace.sSource = "VGM";
+	elseif tRace.sRace == "duergar" or tRace.sRace == "deep gnome" or tRace.sRace == "eladrin" or tRace.sRace == "sea elf" 
+	or tRace.sRace == "shadar-kai" or tRace.sRace:match("tiefling") then
+		tRace.aScores = {2,1};
+		tRace.sSource = "MTF";
+	elseif tRace.sRace == "gith" then
+		tRace.aScores = {1};
+		tRace.sSource = "MTF";
+	elseif tRace.sRace == "shield dwarf"  then
+		tRace.aScores = {2,2};
+		tRace.sSource = "SCA";
+	elseif tRace.sRace == "gray dwarf (duergar)" or tRace.sRace == "gold dwarf" or tRace.sRace == "moon elf" or tRace.sRace == "sun elf" 
+	or tRace.sRace == "wood elf" or tRace.sRace:match("half-elf-variant") or tRace.sRace:match("tiefling-variant") 
+	or tRace.sRace == "deep gnome (svirfneblin)" or tRace.sRace == "halfling (ghostwise)" or tRace.sRace == "halfling (strongheart)" then
+		tRace.aScores = {2,1};
+		tRace.sSource = "SCA";
 	else
-		aRace.sVaild = "Invalid: Non-legal race";
+		tRace.sValid = "Invalid: Non-legal race or no sub-race";
 	end
 
-	return aRace;
+	return tRace;
 end
 
 function getMagicItems(nodeActor)
@@ -453,300 +449,313 @@ function getClass(nodeActor)
 	for _,nodeClass in pairs(DB.getChildren(nodeActor, "classes")) do
 		aClass.nLevel = DB.getValue(nodeClass, "level", 0);
 		aClass.sClass = StringManager.trim(DB.getValue(nodeClass, "name", "")):lower();
-		for _,vFeature in pairs(DB.getChildren(nodeActor, "featurelist")) do
-			local sFeature = DB.getValue(vFeature, "name", ""):lower();
+		if aClass.nLevel < 3 and (aClass.sClass == "artificer" or aClass.sClass == "barbarian" or aClass.sClass == "bard" or aClass.sClass == "fighter" 
+		or aClass.sClass == "monk" or aClass.sClass == "paladin" or aClass.sClass == "ranger" or aClass.sClass == "rogue") then
 			if aClass.sClass == "artificer" then
-				if aClass.nLevel >= 3 and (sFeature == "alchemist" or sFeature == "armorer" or sFeature == "artillerist" or sFeature == "battle smith") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "TCE";
-					aClass.sValid = "Valid";
-					break;
-				elseif (aClass.nLevel >= 3) then
-					aClass.sValid = "Invalid: Missing or invalid subclass";	
-				end			
-			elseif aClass.sClass == "barbarian" then
-				if aClass.nLevel >= 3 and (sFeature == "path of the berserker" or sFeature == "path of the totem warrior")  then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "PHB";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 and (sFeature == "path of the battlerager" or sFeature == "path of the totem warrior - expanded")  then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "SCA";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 and (sFeature == "path of the beast" or sFeature == "path of the wild magic")  then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "TCE";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 and (sFeature == "path of the ancestral guardian" or sFeature == "path of the storm herald" or sFeature == "path of the zealot") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "XGE";
-					aClass.sValid = "Valid";
-					break;
-				elseif  aClass.nLevel >= 3 then
-					aClass.sValid = "Invalid: Missing or invalid subclass";	
-				end			
-			elseif aClass.sClass == "bard" then
-				if aClass.nLevel >= 3 and (sFeature == "college of lore" or sFeature == "college of lore") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "PHB";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 and (sFeature == "college of creation" or sFeature == "college of eloquence") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "TCE";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 and (sFeature == "college of glamour" or sFeature == "college of swords" or sFeature == "college of whispers") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "XGE";
-					aClass.sValid = "Valid";
-					break;
-				elseif  aClass.nLevel >= 3 then
-					aClass.sValid = "Invalid: Missing or invalid subclass";	
-				end			
-			elseif aClass.sClass == "cleric" then
-				if sFeature == "knowledge domain" or sFeature == "life domain" or sFeature == "light domain" or sFeature == "nature domain"
-				or sFeature == "tempest domain" or sFeature == "trickery domain" or sFeature == "war domain" then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "PHB";
-					aClass.sValid = "Valid";
-					break;
-				elseif sFeature == "arcana domain" then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "SCA";
-					aClass.sValid = "Valid";
-					break;
-				elseif sFeature == "order domain" or sFeature == "peace domain" or sFeature == "twilight domain" then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "TCE";
-					aClass.sValid = "Valid";
-					break;
-				elseif sFeature == "forge domain" or sFeature == "grave domain"  then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "XGE";
-					aClass.sValid = "Valid";
-					break;
-				else
-					aClass.sValid = "Invalid: Missing or invalid subclass";	
-				end			
-			elseif aClass.sClass == "druid" then
-				if aClass.nLevel >= 2 and (sFeature == "circle of the land" or sFeature == "circle of the moon") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "PHB";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 2 and (sFeature == "circle of the spores" or sFeature == "circle of the stars" or sFeature == "circle of the wildfire") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "TCE";
-					aClass.sValid = "Valid";
-					break;				
-				elseif aClass.nLevel >= 2 and (sFeature == "circle of the dreams" or sFeature == "circle of the shepherd") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "XGE";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 2 then
-					aClass.sValid = "Invalid: Missing or invalid subclass";	
-				end			
-			elseif aClass.sClass == "fighter" then
-				if aClass.nLevel >= 3 and (sFeature == "champion" or sFeature == "battlemaster") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "PHB";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 and (sFeature == "purple dragon knight") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "SCA";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 and (sFeature == "psi warrior"  or sFeature == "rune knight") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "TCE";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 and (sFeature == "arcane archer" or sFeature == "cavalier" or sFeature == "samurai") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "XGE";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3  then
-					aClass.sValid = "Invalid: Missing or invalid subclass";	
-				end			
-			elseif aClass.sClass == "monk" then
-				if aClass.nLevel >= 3 and (sFeature == "way of the open hand" or sFeature == "way of shadow" or sFeature == "way of the four elements") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "PHB";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 and (sFeature == "way of the long death" or sFeature == "way of the sun soul") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "SCA|XGE";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 and (sFeature == "way of mercy" or sFeature == "way of the astral self") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "TCE";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 and (sFeature == "way of the drunken master" or sFeature == "way of the kensei") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "XGE";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 then
-					aClass.sValid = "Invalid: Missing or invalid subclass";	
-				end			
-			elseif aClass.sClass == "paladin" then
-				if aClass.nLevel >= 3 and (sFeature == "oath of devotion" or sFeature == "oath of the ancients" or sFeature == "oath of vengeance") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "PHB";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 and (sFeature == "oath of the crown") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "SCA";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 and (sFeature == "oath of glory" or sFeature == "oath of the watchers") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "TCE";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 and (sFeature == "oath of conquest" or sFeature == "oath of redemption") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "XGE";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 then
-					aClass.sValid = "Invalid: Missing or invalid subclass";	
-				end			
-			elseif aClass.sClass == "ranger" then
-				if aClass.nLevel >= 3 and (sFeature == "hunter" or sFeature == "beastmaster") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "PHB";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 and (sFeature == "fey wanderer" or sFeature == "swarmkeeper") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "TCE";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 and (sFeature == "gloom stalker" or sFeature == "horizon walker"  or sFeature == "monster slayer") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "XGE";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 then
-					aClass.sValid = "Invalid: Missing or invalid subclass";	
-				end			
-			elseif aClass.sClass == "rogue" then
-				if aClass.nLevel >= 3 and (sFeature == "theif" or sFeature == "assassin" or sFeature == "arcane trickster") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "PHB";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 and (sFeature == "mastermind")  then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "SCA";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 and (ssFeature == "swashbuckler") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "SCA|XGE";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 and (sFeature == "phantom" or sFeature == "soulknife") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "TCE";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 and (sFeature == "inquisitive" or sFeature == "mastermind" or sFeature == "scout") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "XGE";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 3 then
-					aClass.sValid = "Invalid: Missing or invalid subclass";	
-				end			
-			elseif aClass.sClass == "sorcerer" then
-				if sFeature == "draconic bloodline" or sFeature == "wild magic" then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "PHB";
-					aClass.sValid = "Valid";
-					break;
-				elseif sFeature == "storm sorcery" then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "SCA|XGE";
-					aClass.sValid = "Valid";
-					break;
-				elseif sFeature == "aberrant mind" or sFeature == "clockwork soul"  then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "TCE";
-					aClass.sValid = "Valid";
-					break;
-				elseif sFeature == "divine soul" or sFeature == "shadow magic"  then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "XGE";
-					aClass.sValid = "Valid";
-					break;
-				else
-					aClass.sValid = "Invalid: Missing or invalid subclass";	
-				end			
-			elseif aClass.sClass == "warlock" then
-				if sFeature == "the archfey" or sFeature == "the fiend" or sFeature == "the great old one" then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "PHB";
-					aClass.sValid = "Valid";
-					break;
-				elseif sFeature == "the undying"  then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "SCA";
-					aClass.sValid = "Valid";
-					break;
-				elseif sFeature == "the fathomless" or sFeature == "the genie"  then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "TCE";
-					aClass.sValid = "Valid";
-					break;
-				elseif sFeature == "the celestial" or sFeature == "hexblade"  then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "XGE";
-					aClass.sValid = "Valid";
-					break;
-				else
-					aClass.sValid = "Invalid: Missing or invalid subclass";	
-				end			
-			elseif aClass.sClass == "wizard" then
-				if aClass.nLevel >= 2 and (sFeature == "school of abjuration" or sFeature == "school of conjuration" or sFeature == "school of divination" or 
-				sFeature == "school of enchantment" or sFeature == "school of evocation" or sFeature == "school of illusion" or 
-				sFeature == "school of necromancy" or sFeature == "school of transmutation") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "PHB";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 2 and (sFeature == "bladesinging") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "SCA|TCE";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 2 and (sFeature == "order of scribes")  then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "TCE";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 2 and (sFeature == "war magic") then
-					aClass.sSubclass = sFeature;
-					aClass.sSource = "XGE";
-					aClass.sValid = "Valid";
-					break;
-				elseif aClass.nLevel >= 2 then
-					aClass.sValid = "Invalid: Missing or invalid subclass";	
-				end			
+				aClass.sSource = "TCE";
 			else
-				aClass.sValid = "Invalid: Invalid class";	
+				aClass.sSource = "PHB";
+			end
+			aClass.sValid = "Valid";
+		elseif aClass.nLevel < 2 and ( aClass.sClass == "druid"  or aClass.sClass == "wizard")	then
+			aClass.sSource = "PHB";
+			aClass.sValid = "Valid";
+		else 
+			for _,vFeature in pairs(DB.getChildren(nodeActor, "featurelist")) do
+				local sFeature = DB.getValue(vFeature, "name", ""):lower();
+				if aClass.sClass == "artificer" then
+					if aClass.nLevel >= 3 and (sFeature == "alchemist" or sFeature == "armorer" or sFeature == "artillerist" or sFeature == "battle smith") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "TCE";
+						aClass.sValid = "Valid";
+						break;
+					elseif (aClass.nLevel >= 3) then
+						aClass.sValid = "Invalid: Missing or invalid subclass";	
+					end			
+				elseif aClass.sClass == "barbarian" then
+					if aClass.nLevel >= 3 and (sFeature == "path of the berserker" or sFeature == "path of the totem warrior")  then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "PHB";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 and (sFeature == "path of the battlerager" or sFeature == "path of the totem warrior - expanded")  then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "SCA";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 and (sFeature == "path of the beast" or sFeature == "path of the wild magic")  then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "TCE";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 and (sFeature == "path of the ancestral guardian" or sFeature == "path of the storm herald" or sFeature == "path of the zealot") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "XGE";
+						aClass.sValid = "Valid";
+						break;
+					elseif  aClass.nLevel >= 3 then
+						aClass.sValid = "Invalid: Missing or invalid subclass";	
+					end			
+				elseif aClass.sClass == "bard" then
+					if aClass.nLevel >= 3 and (sFeature == "college of lore" or sFeature == "college of lore") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "PHB";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 and (sFeature == "college of creation" or sFeature == "college of eloquence") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "TCE";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 and (sFeature == "college of glamour" or sFeature == "college of swords" or sFeature == "college of whispers") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "XGE";
+						aClass.sValid = "Valid";
+						break;
+					elseif  aClass.nLevel >= 3 then
+						aClass.sValid = "Invalid: Missing or invalid subclass";	
+					end			
+				elseif aClass.sClass == "cleric" then
+					if sFeature == "knowledge domain" or sFeature == "life domain" or sFeature == "light domain" or sFeature == "nature domain"
+					or sFeature == "tempest domain" or sFeature == "trickery domain" or sFeature == "war domain" then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "PHB";
+						aClass.sValid = "Valid";
+						break;
+					elseif sFeature == "arcana domain" then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "SCA";
+						aClass.sValid = "Valid";
+						break;
+					elseif sFeature == "order domain" or sFeature == "peace domain" or sFeature == "twilight domain" then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "TCE";
+						aClass.sValid = "Valid";
+						break;
+					elseif sFeature == "forge domain" or sFeature == "grave domain"  then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "XGE";
+						aClass.sValid = "Valid";
+						break;
+					else
+						aClass.sValid = "Invalid: Missing or invalid subclass";	
+					end			
+				elseif aClass.sClass == "druid" then
+					if aClass.nLevel >= 2 and (sFeature == "circle of the land" or sFeature == "circle of the moon") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "PHB";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 2 and (sFeature == "circle of spores" or sFeature == "circle of stars" or sFeature == "circle of wildfire") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "TCE";
+						aClass.sValid = "Valid";
+						break;				
+					elseif aClass.nLevel >= 2 and (sFeature == "circle of dreams" or sFeature == "circle of the shepherd") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "XGE";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 2 then
+						aClass.sValid = "Invalid: Missing or invalid subclass";	
+					end			
+				elseif aClass.sClass == "fighter" then
+					if aClass.nLevel >= 3 and (sFeature == "champion" or sFeature == "battlemaster" or sFeature == "eldritch knight") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "PHB";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 and (sFeature == "purple dragon knight") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "SCA";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 and (sFeature == "psi warrior"  or sFeature == "rune knight") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "TCE";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 and (sFeature == "arcane archer" or sFeature == "cavalier" or sFeature == "samurai") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "XGE";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3  then
+						aClass.sValid = "Invalid: Missing or invalid subclass";	
+					end			
+				elseif aClass.sClass == "monk" then
+					if aClass.nLevel >= 3 and (sFeature == "way of the open hand" or sFeature == "way of shadow" or sFeature == "way of the four elements") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "PHB";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 and (sFeature == "way of the long death" or sFeature == "way of the sun soul") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "SCA|XGE";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 and (sFeature == "way of mercy" or sFeature == "way of the astral self") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "TCE";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 and (sFeature == "way of the drunken master" or sFeature == "way of the kensei") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "XGE";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 then
+						aClass.sValid = "Invalid: Missing or invalid subclass";	
+					end			
+				elseif aClass.sClass == "paladin" then
+					if aClass.nLevel >= 3 and (sFeature == "oath of devotion" or sFeature == "oath of the ancients" or sFeature == "oath of vengeance") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "PHB";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 and (sFeature == "oath of the crown") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "SCA";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 and (sFeature == "oath of glory" or sFeature == "oath of the watchers") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "TCE";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 and (sFeature == "oath of conquest" or sFeature == "oath of redemption") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "XGE";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 then
+						aClass.sValid = "Invalid: Missing or invalid subclass";	
+					end			
+				elseif aClass.sClass == "ranger" then
+					if aClass.nLevel >= 3 and (sFeature == "hunter" or sFeature == "beastmaster") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "PHB";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 and (sFeature == "fey wanderer" or sFeature == "swarmkeeper") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "TCE";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 and (sFeature == "gloom stalker" or sFeature == "horizon walker"  or sFeature == "monster slayer") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "XGE";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 then
+						aClass.sValid = "Invalid: Missing or invalid subclass";	
+					end			
+				elseif aClass.sClass == "rogue" then
+					if aClass.nLevel >= 3 and (sFeature == "theif" or sFeature == "assassin" or sFeature == "arcane trickster") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "PHB";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 and (sFeature == "mastermind")  then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "SCA";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 and (ssFeature == "swashbuckler") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "SCA|XGE";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 and (sFeature == "phantom" or sFeature == "soulknife") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "TCE";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 and (sFeature == "inquisitive" or sFeature == "mastermind" or sFeature == "scout") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "XGE";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 3 then
+						aClass.sValid = "Invalid: Missing or invalid subclass";	
+					end			
+				elseif aClass.sClass == "sorcerer" then
+					if sFeature == "draconic bloodline" or sFeature == "wild magic" then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "PHB";
+						aClass.sValid = "Valid";
+						break;
+					elseif sFeature == "storm sorcery" then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "SCA|XGE";
+						aClass.sValid = "Valid";
+						break;
+					elseif sFeature == "aberrant mind" or sFeature == "clockwork soul"  then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "TCE";
+						aClass.sValid = "Valid";
+						break;
+					elseif sFeature == "divine soul" or sFeature == "shadow magic"  then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "XGE";
+						aClass.sValid = "Valid";
+						break;
+					else
+						aClass.sValid = "Invalid: Missing or invalid subclass";	
+					end			
+				elseif aClass.sClass == "warlock" then
+					if sFeature == "the archfey" or sFeature == "the fiend" or sFeature == "the great old one" then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "PHB";
+						aClass.sValid = "Valid";
+						break;
+					elseif sFeature == "the undying"  then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "SCA";
+						aClass.sValid = "Valid";
+						break;
+					elseif sFeature == "the fathomless" or sFeature == "the genie"  then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "TCE";
+						aClass.sValid = "Valid";
+						break;
+					elseif sFeature == "the celestial" or sFeature == "hexblade"  then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "XGE";
+						aClass.sValid = "Valid";
+						break;
+					else
+						aClass.sValid = "Invalid: Missing or invalid subclass";	
+					end			
+				elseif aClass.sClass == "wizard" then
+					if aClass.nLevel >= 2 and (sFeature == "school of abjuration" or sFeature == "school of conjuration" or sFeature == "school of divination" or 
+					sFeature == "school of enchantment" or sFeature == "school of evocation" or sFeature == "school of illusion" or 
+					sFeature == "school of necromancy" or sFeature == "school of transmutation") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "PHB";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 2 and (sFeature == "bladesinging") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "SCA|TCE";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 2 and (sFeature == "order of scribes")  then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "TCE";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 2 and (sFeature == "war magic") then
+						aClass.sSubclass = sFeature;
+						aClass.sSource = "XGE";
+						aClass.sValid = "Valid";
+						break;
+					elseif aClass.nLevel >= 2 then
+						aClass.sValid = "Invalid: Missing or invalid subclass";	
+					end			
+				else
+					aClass.sValid = "Invalid: Invalid class";	
+				end
 			end
 		end
 		table.insert(aClassActor, aClass);
