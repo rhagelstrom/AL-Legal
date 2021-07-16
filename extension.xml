@@ -1,24 +1,19 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 <root version="3.3" >
 
-    <announcement text="AL Legal - Extension v0.2\r5E version for Fantasy Grounds\r--by Ryan Hagelstrom 2021" font="emotefont" />
+    <announcement text="AL Legal v1.0\rby Ryan Hagelstrom 2021" font="emotefont" icon="AL Legal"/>
 	<properties>
-    <loadorder>99</loadorder>
-		<name>5E - AL Legal</name>
-		<version>0.2</version>
+    <loadorder>120</loadorder>
+		<name>Feature: AL Legal</name>
+		<version>1.0</version>
 		<author>Ryan Hagelstrom</author>
 		<description>Checks to see if a character is AL Legal</description>
 		<ruleset>
             <name>5E</name>
 		</ruleset>
 	</properties>
-
-  <loadorder>99</loadorder>
 	<base>
-
-    <script name="CharacterManagerALLegal" file="scripts/manager_char_al_legal.lua" />
-
+	    <icon name="AL Legal"    file="graphics/icons/allegal.png"></icon>
+    	<script name="CharacterManagerALLegal" file="scripts/manager_char_al_legal.lua" />
   </base>
-  
-    
 </root>
